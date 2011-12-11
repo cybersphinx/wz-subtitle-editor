@@ -149,9 +149,9 @@ QList<Subtitle> MainWindow::readSubtitles(const QString &fileName)
 
     while (!textStream.atEnd())
     {
-        QString line = textStream.readLine();
+        QString line = textStream.readLine().trimmed();
 
-        if (line.isEmpty() || line.trimmed().startsWith("//"))
+        if (line.isEmpty() || line.startsWith("//"))
         {
             continue;
         }
