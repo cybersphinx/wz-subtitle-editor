@@ -66,6 +66,9 @@ private:
     QList<QList<Subtitle> > subtitles;
     int currentSubtitle;
     int currentTrack;
+
+    void openMovie(const QString &filename);
+    void openSubtitle(const QString &filename, int index);
 };
 
 #endif // SUBTITLESEDITOR_H

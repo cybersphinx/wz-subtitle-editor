@@ -230,38 +230,55 @@ bool MainWindow::saveSubtitles(QString fileName)
     return true;
 }
 
+void MainWindow::openMovie(const QString &filename)
+{
+    mediaObject->setCurrentSource(Phonon::MediaSource(filename));
+
+    fileNameLabel->setText(QFileInfo(filename).fileName());
+    timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
+}
+
+void MainWindow::openSubtitle(const QString &filename, int index)
+{
+    subtitles[index] = readSubtitles(filename);
+}
+
 void MainWindow::actionOpen()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Video or Subtitle file"), QSettings().value("lastUsedDir", QDesktopServices::storageLocation(QDesktopServices::HomeLocation)).toString(), tr("Video and subtitle files (*.txt *.og*)"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Video or Subtitle file"),
+            QSettings().value("lastUsedDir", QDesktopServices::storageLocation(QDesktopServices::HomeLocation)).toString(),
+            tr("Video and subtitle files (*.txt *.og?)"));
 
     if (!fileName.isEmpty())
     {
-        if (fileName.endsWith(".ogg", Qt::CaseInsensitive) || fileName.endsWith(".ogv", Qt::CaseInsensitive) || fileName.endsWith(".ogm", Qt::CaseInsensitive))
-        {
-            mediaObject->setCurrentSource(Phonon::MediaSource(fileName));
+        const QString basename = fileName.left(fileName.length() - 3);
+        const QString oggfile = basename + "ogg";
+        const QString ogmfile = basename + "ogm";
+        const QString ogvfile = basename + "ogv";
+        const QString txtfile = basename + "txt";
+        const QString txafile = basename + "txa";
 
-            fileNameLabel->setText(QFileInfo(fileName).fileName());
-            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
-        }
-        else
+        subtitles[0].clear();
+        subtitles[1].clear();
+
+        if (QFile::exists(oggfile))
+            openMovie(oggfile);
+        if (QFile::exists(ogmfile))
+            openMovie(ogmfile);
+        if (QFile::exists(ogvfile))
+            openMovie(ogvfile);
+        if (QFile::exists(txtfile))
         {
+            openSubtitle(txtfile, 0);
             currentPath = fileName;
-
-            subtitles[0] = readSubtitles(fileName);
-
-            if (QFile::exists(fileName.left(fileName.length() - 3) + "txa"))
-            {
-                subtitles[1] = readSubtitles(fileName.left(fileName.length() - 3) + "txa");
-            }
-            else
-            {
-                subtitles[1].clear();
-            }
-
-            currentSubtitle = 0;
-
-            nextSubtitle();
         }
+        if (QFile::exists(txafile))
+        {
+            openSubtitle(txafile, 1);
+            currentPath = fileName;
+        }
+
+        selectTrack(0);
 
         QSettings().setValue("lastUsedDir", QFileInfo(fileName).dir().path());
     }
