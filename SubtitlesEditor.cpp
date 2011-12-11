@@ -32,11 +32,12 @@ MainWindow::MainWindow(QWidget *parent) :
     subtitlesWidget->resize(100, 100);
     subtitlesWidget->move(QPoint(100, 100));
 
-    ui->videoPlayer->installEventFilter(this);
-    ui->videoPlayer->mediaObject()->setTickInterval(100);
-    ui->videoPlayer->videoWidget()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    mediaObject = new Phonon::MediaObject(this);
+    mediaObject->setTickInterval(100);
+    Phonon::createPath(mediaObject, ui->videoWidget);
 
-    installEventFilter(this);
+    audioOutput = new Phonon::AudioOutput(this);
+    Phonon::createPath(mediaObject, audioOutput);
 
     ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     ui->actionPlayPause->setShortcut(tr("Space"));
@@ -58,8 +59,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->removeButton->setDefaultAction(ui->actionRemove);
     ui->previousButton->setDefaultAction(ui->actionPrevious);
     ui->nextButton->setDefaultAction(ui->actionNext);
-    ui->seekSlider->setMediaObject(ui->videoPlayer->mediaObject());
-    ui->volumeSlider->setAudioOutput(ui->videoPlayer->audioOutput());
+    ui->seekSlider->setMediaObject(mediaObject);
+    ui->volumeSlider->setAudioOutput(audioOutput);
     ui->statusBar->addPermanentWidget(fileNameLabel);
     ui->statusBar->addPermanentWidget(timeLabel);
 
@@ -73,12 +74,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionNext, SIGNAL(triggered()), this, SLOT(nextSubtitle()));
     connect(ui->actionRescale, SIGNAL(triggered()), this, SLOT(rescaleSubtitles()));
     connect(ui->actionPlayPause, SIGNAL(triggered()), this, SLOT(playPause()));
-    connect(ui->actionStop, SIGNAL(triggered()), ui->videoPlayer->mediaObject(), SLOT(stop()));
+    connect(ui->actionStop, SIGNAL(triggered()), mediaObject, SLOT(stop()));
     connect(ui->actionAboutQt, SIGNAL(triggered()), QApplication::instance(), SLOT(aboutQt()));
     connect(ui->actionAboutApplication, SIGNAL(triggered()), this, SLOT(actionAboutApplication()));
     connect(ui->trackComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(selectTrack(int)));
-    connect(ui->videoPlayer->mediaObject(), SIGNAL(tick(qint64)), this, SLOT(tick()));
-    connect(ui->videoPlayer->mediaObject(), SIGNAL(stateChanged(Phonon::State,Phonon::State)), this, SLOT(stateChanged(Phonon::State)));
+    connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick()));
+    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)), this, SLOT(stateChanged(Phonon::State)));
 }
 
 MainWindow::~MainWindow()
@@ -237,10 +238,10 @@ void MainWindow::actionOpen()
     {
         if (fileName.endsWith(".ogg", Qt::CaseInsensitive) || fileName.endsWith(".ogv", Qt::CaseInsensitive) || fileName.endsWith(".ogm", Qt::CaseInsensitive))
         {
-            ui->videoPlayer->mediaObject()->setCurrentSource(Phonon::MediaSource(fileName));
+            mediaObject->setCurrentSource(Phonon::MediaSource(fileName));
 
             fileNameLabel->setText(QFileInfo(fileName).fileName());
-            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(ui->videoPlayer->mediaObject()->totalTime())));
+            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
         }
         else
         {
@@ -298,13 +299,13 @@ void MainWindow::stateChanged(Phonon::State state)
     switch (state)
     {
         case Phonon::ErrorState:
-            if (ui->videoPlayer->mediaObject()->errorType() == Phonon::FatalError)
+            if (mediaObject->errorType() == Phonon::FatalError)
             {
-                QMessageBox::warning(this, tr("Fatal Error"), ui->videoPlayer->mediaObject()->errorString());
+                QMessageBox::warning(this, tr("Fatal Error"), mediaObject->errorString());
             }
             else
             {
-                QMessageBox::warning(this, tr("Error"), ui->videoPlayer->mediaObject()->errorString());
+                QMessageBox::warning(this, tr("Error"), mediaObject->errorString());
             }
             break;
         case Phonon::PlayingState:
@@ -316,7 +317,7 @@ void MainWindow::stateChanged(Phonon::State state)
             ui->actionPlayPause->setEnabled(true);
             ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
             ui->actionStop->setEnabled(false);
-            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(ui->videoPlayer->mediaObject()->totalTime())));
+            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
             break;
         case Phonon::PausedState:
             ui->actionPlayPause->setEnabled(true);
@@ -330,11 +331,11 @@ void MainWindow::stateChanged(Phonon::State state)
 
 void MainWindow::tick()
 {
-    timeLabel->setText(QString("%1 / %2").arg(timeToString(ui->videoPlayer->mediaObject()->currentTime())).arg(timeToString(ui->videoPlayer->mediaObject()->totalTime())));
+    timeLabel->setText(QString("%1 / %2").arg(timeToString(mediaObject->currentTime())).arg(timeToString(mediaObject->totalTime())));
 
     QList<Subtitle> currentBottomSubtitles;
     QList<Subtitle> currentTopSubtitles;
-    qint64 currentTime = (ui->videoPlayer->mediaObject()->currentTime() / 1000);
+    qint64 currentTime = (mediaObject->currentTime() / 1000);
 
     for (int i = 0; i < subtitles[0].count(); ++i)
     {
@@ -494,34 +495,13 @@ void MainWindow::rescaleSubtitles()
 
 void MainWindow::playPause()
 {
-    if (ui->videoPlayer->mediaObject()->state() == Phonon::PlayingState)
+    if (mediaObject->state() == Phonon::PlayingState)
     {
-         ui->videoPlayer->mediaObject()->pause();
+         mediaObject->pause();
     }
     else
     {
-         ui->videoPlayer->mediaObject()->play();
+         mediaObject->play();
     }
 }
 
-bool MainWindow::eventFilter(QObject *object, QEvent *event)
-{
-    if (event->type() == QEvent::Move)
-    {
-        subtitlesWidget->move(ui->videoPlayer->mapToGlobal(ui->videoPlayer->pos()));
-    }
-    else if (event->type() == QEvent::Resize)
-    {
-        subtitlesWidget->resize(ui->videoPlayer->size());
-    }
-    else if (event->type() == QEvent::Hide)
-    {
-        subtitlesWidget->hide();
-    }
-    else if (event->type() == QEvent::Show)
-    {
-        subtitlesWidget->show();
-    }
-
-    return ui->videoPlayer->eventFilter(object, event);
-}

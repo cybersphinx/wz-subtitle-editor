@@ -31,8 +31,6 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    bool eventFilter(QObject *object, QEvent *event);
-
 public slots:
     void actionOpen();
     void actionSave();
@@ -59,6 +57,8 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+    Phonon::MediaObject *mediaObject;
+    Phonon::AudioOutput *audioOutput;
     SubtitlesWidget *subtitlesWidget;
     QString currentPath;
     QLabel *fileNameLabel;
