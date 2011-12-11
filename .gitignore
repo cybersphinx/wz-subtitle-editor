@@ -1,0 +1,8 @@
+# binary
+SubtitlesEditor
+
+# generated files
+Makefile
+/moc
+/obj
+/ui
