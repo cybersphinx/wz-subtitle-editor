@@ -43,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionPlayPause->setDisabled(true);
 
     ui->actionStop->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-    ui->actionStop->setShortcut(tr("Ctrl+S"));
     ui->actionStop->setDisabled(true);
 
     fileNameLabel = new QLabel(tr("No file loaded"), this);
