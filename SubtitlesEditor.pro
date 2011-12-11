@@ -1,8 +1,7 @@
 # -------------------------------------------------
 # Project created by QtCreator 2010-04-20T08:57:59
 # -------------------------------------------------
-QT += phonon \
-    multimedia
+QT += phonon
 TARGET = SubtitlesEditor
 TEMPLATE = app
 SOURCES += main.cpp \
