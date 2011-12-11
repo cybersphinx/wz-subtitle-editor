@@ -10,3 +10,7 @@ SOURCES += main.cpp \
 HEADERS += SubtitlesEditor.h \
     SubtitlesWidget.h
 FORMS += SubtitlesEditor.ui
+
+UI_DIR = ui
+MOC_DIR = moc
+OBJECTS_DIR = obj
