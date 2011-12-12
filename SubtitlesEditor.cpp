@@ -354,9 +354,9 @@ void MainWindow::tick()
         {
             currentBottomSubtitles.append(subtitles[0].at(i).text);
             currentBottomSubtitles.append(" | ");
+            currentSubtitle = i;
         }
     }
-
     for (int i = 0; i < subtitles[1].count(); ++i)
     {
         if (subtitles[1].at(i).beginTime < currentTime && subtitles[1].at(i).endTime > currentTime)
@@ -365,6 +365,8 @@ void MainWindow::tick()
             currentTopSubtitles.append(" | ");
         }
     }
+
+    showSubtitle();
     currentTopSubtitles = currentTopSubtitles.left(currentTopSubtitles.length() - 3);
     currentBottomSubtitles = currentBottomSubtitles.left(currentBottomSubtitles.length() - 3);
     ui->bottomSubs->setText(currentBottomSubtitles);
