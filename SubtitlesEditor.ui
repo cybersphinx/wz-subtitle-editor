@@ -34,12 +34,32 @@
         <number>0</number>
        </property>
        <item>
+        <widget class="QLabel" name="topSubs">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>64</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="Phonon::VideoWidget" name="videoWidget">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="bottomSubs">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>64</height>
+          </size>
          </property>
         </widget>
        </item>

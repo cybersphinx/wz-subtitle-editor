@@ -1,5 +1,4 @@
 #include "SubtitlesEditor.h"
-#include "SubtitlesWidget.h"
 #include "ui_SubtitlesEditor.h"
 
 #include <QtCore/QSettings>
@@ -22,15 +21,10 @@ MainWindow::MainWindow(QWidget *parent) :
     currentTrack = 0;
 
     ui->setupUi(this);
-
-    subtitlesWidget = new SubtitlesWidget(this);
-    subtitlesWidget->show();
-    subtitlesWidget->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | subtitlesWidget->windowFlags());
-    subtitlesWidget->setWindowModality(Qt::NonModal);
-    subtitlesWidget->setAttribute(Qt::WA_TranslucentBackground, true);
-    subtitlesWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-    subtitlesWidget->resize(100, 100);
-    subtitlesWidget->move(QPoint(100, 100));
+    ui->topSubs->setWordWrap(true);
+    ui->topSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
+    ui->bottomSubs->setWordWrap(true);
+    ui->bottomSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
 
     mediaObject = new Phonon::MediaObject(this);
     mediaObject->setTickInterval(100);
@@ -350,15 +344,16 @@ void MainWindow::tick()
 {
     timeLabel->setText(QString("%1 / %2").arg(timeToString(mediaObject->currentTime())).arg(timeToString(mediaObject->totalTime())));
 
-    QList<Subtitle> currentBottomSubtitles;
-    QList<Subtitle> currentTopSubtitles;
+    QString currentBottomSubtitles;
+    QString currentTopSubtitles;
     qint64 currentTime = (mediaObject->currentTime() / 1000);
 
     for (int i = 0; i < subtitles[0].count(); ++i)
     {
         if (subtitles[0].at(i).beginTime < currentTime && subtitles[0].at(i).endTime > currentTime)
         {
-            currentBottomSubtitles.append(subtitles[0].at(i));
+            currentBottomSubtitles.append(subtitles[0].at(i).text);
+            currentBottomSubtitles.append(" | ");
         }
     }
 
@@ -366,12 +361,14 @@ void MainWindow::tick()
     {
         if (subtitles[1].at(i).beginTime < currentTime && subtitles[1].at(i).endTime > currentTime)
         {
-            currentTopSubtitles.append(subtitles[1].at(i));
+            currentTopSubtitles.append(subtitles[1].at(i).text);
+            currentTopSubtitles.append(" | ");
         }
     }
-
-    subtitlesWidget->showText(currentBottomSubtitles, currentTopSubtitles);
-    subtitlesWidget->update();
+    currentTopSubtitles = currentTopSubtitles.left(currentTopSubtitles.length() - 3);
+    currentBottomSubtitles = currentBottomSubtitles.left(currentBottomSubtitles.length() - 3);
+    ui->bottomSubs->setText(currentBottomSubtitles);
+    ui->topSubs->setText(currentTopSubtitles);
 }
 
 void MainWindow::selectTrack(int track)

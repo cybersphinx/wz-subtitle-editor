@@ -5,10 +5,8 @@ QT += phonon
 TARGET = SubtitlesEditor
 TEMPLATE = app
 SOURCES += main.cpp \
-    SubtitlesEditor.cpp \
-    SubtitlesWidget.cpp
-HEADERS += SubtitlesEditor.h \
-    SubtitlesWidget.h
+    SubtitlesEditor.cpp
+HEADERS += SubtitlesEditor.h
 FORMS += SubtitlesEditor.ui
 
 UI_DIR = ui
