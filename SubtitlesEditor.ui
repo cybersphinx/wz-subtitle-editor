@@ -292,7 +292,7 @@
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>&amp;File</string>
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
@@ -302,14 +302,14 @@
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionAboutQt"/>
     <addaction name="actionAboutApplication"/>
    </widget>
    <widget class="QMenu" name="menuSubtitles">
     <property name="title">
-     <string>Subtitles</string>
+     <string>&amp;Subtitles</string>
     </property>
     <addaction name="actionAdd"/>
     <addaction name="actionRemove"/>
@@ -321,7 +321,7 @@
    </widget>
    <widget class="QMenu" name="menuVideo">
     <property name="title">
-     <string>Video</string>
+     <string>&amp;Video</string>
     </property>
     <addaction name="actionPlayPause"/>
     <addaction name="actionStop"/>
