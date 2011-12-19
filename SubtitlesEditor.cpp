@@ -1,3 +1,23 @@
+/***********************************************************************************
+* Warzone 2100 Subtitles Editor.
+* Copyright (C) 2010 - 2011 Michal Dutkiewicz aka Emdek <emdeck@gmail.com>
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*
+***********************************************************************************/
+
 #include "SubtitlesEditor.h"
 #include "ui_SubtitlesEditor.h"
 
@@ -8,516 +28,576 @@
 #include <QtGui/QInputDialog>
 #include <QtGui/QDesktopServices>
 
-#include <QDebug>
+#include <Phonon/AudioOutput>
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
+	m_ui(new Ui::MainWindow),
+	m_currentSubtitle(0),
+	m_currentTrack(0)
 {
-    subtitles.append(QList<Subtitle>());
-    subtitles.append(QList<Subtitle>());
+	m_subtitles.append(QList<Subtitle>());
+	m_subtitles.append(QList<Subtitle>());
 
-    currentSubtitle = 0;
-    currentTrack = 0;
+	m_ui->setupUi(this);
 
-    ui->setupUi(this);
-    ui->topSubs->setWordWrap(true);
-    ui->topSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
-    ui->bottomSubs->setWordWrap(true);
-    ui->bottomSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
+	Phonon::AudioOutput *audioOutput = new Phonon::AudioOutput(this);
+	audioOutput->setVolume(QSettings().value("volume", 0.8).toReal());
 
-    mediaObject = new Phonon::MediaObject(this);
-    mediaObject->setTickInterval(100);
-    Phonon::createPath(mediaObject, ui->videoWidget);
+	m_mediaObject = new Phonon::MediaObject(this);
+	m_mediaObject->setTickInterval(100);
 
-    audioOutput = new Phonon::AudioOutput(this);
-    Phonon::createPath(mediaObject, audioOutput);
+	Phonon::createPath(m_mediaObject, m_ui->videoWidget);
+	Phonon::createPath(m_mediaObject, audioOutput);
 
-    ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    ui->actionPlayPause->setShortcut(tr("Space"));
-    ui->actionPlayPause->setDisabled(true);
+	m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-start", style()->standardIcon(QStyle::SP_MediaPlay)));
+	m_ui->actionPlayPause->setShortcut(tr("Space"));
+	m_ui->actionPlayPause->setDisabled(true);
 
-    ui->actionStop->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-    ui->actionStop->setDisabled(true);
+	m_ui->actionStop->setIcon(QIcon::fromTheme("media-playback-stop", style()->standardIcon(QStyle::SP_MediaStop)));
+	m_ui->actionStop->setDisabled(true);
 
-    fileNameLabel = new QLabel(tr("No file loaded"), this);
-    fileNameLabel->setMaximumWidth(300);
-    timeLabel = new QLabel("00:00.0 / 00:00.0", this);
+	m_fileNameLabel = new QLabel(tr("No file loaded"), this);
+	m_fileNameLabel->setMaximumWidth(300);
+	m_timeLabel = new QLabel("00:00.0 / 00:00.0", this);
 
-    ui->actionOpen->setIcon(style()->standardIcon(QStyle::SP_DirOpenIcon));
-    ui->actionSave->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
-    ui->actionExit->setIcon(style()->standardIcon(QStyle::SP_DialogCloseButton));
-    ui->playPauseButton->setDefaultAction(ui->actionPlayPause);
-    ui->stopButton->setDefaultAction(ui->actionStop);
-    ui->addButton->setDefaultAction(ui->actionAdd);
-    ui->removeButton->setDefaultAction(ui->actionRemove);
-    ui->previousButton->setDefaultAction(ui->actionPrevious);
-    ui->nextButton->setDefaultAction(ui->actionNext);
-    ui->seekSlider->setMediaObject(mediaObject);
-    ui->volumeSlider->setAudioOutput(audioOutput);
-    ui->statusBar->addPermanentWidget(fileNameLabel);
-    ui->statusBar->addPermanentWidget(timeLabel);
+	m_ui->actionOpen->setIcon(QIcon::fromTheme("document-open", style()->standardIcon(QStyle::SP_DirOpenIcon)));
+	m_ui->actionSave->setIcon(QIcon::fromTheme("document-save", style()->standardIcon(QStyle::SP_DialogSaveButton)));
+	m_ui->actionSaveAs->setIcon(QIcon::fromTheme("document-save-as"));
+	m_ui->actionExit->setIcon(QIcon::fromTheme("application-exit", style()->standardIcon(QStyle::SP_DialogCloseButton)));
+	m_ui->actionAdd->setIcon(QIcon::fromTheme("list-add"));
+	m_ui->actionRemove->setIcon(QIcon::fromTheme("list-remove"));
+	m_ui->actionPrevious->setIcon(QIcon::fromTheme("go-previous"));
+	m_ui->actionNext->setIcon(QIcon::fromTheme("go-next"));
+	m_ui->actionRescale->setIcon(QIcon::fromTheme("chronometer"));
+	m_ui->actionAboutApplication->setIcon(QIcon::fromTheme("help-about"));
+	m_ui->playPauseButton->setDefaultAction(m_ui->actionPlayPause);
+	m_ui->stopButton->setDefaultAction(m_ui->actionStop);
+	m_ui->addButton->setDefaultAction(m_ui->actionAdd);
+	m_ui->removeButton->setDefaultAction(m_ui->actionRemove);
+	m_ui->previousButton->setDefaultAction(m_ui->actionPrevious);
+	m_ui->nextButton->setDefaultAction(m_ui->actionNext);
+	m_ui->seekSlider->setMediaObject(m_mediaObject);
+	m_ui->volumeSlider->setAudioOutput(audioOutput);
+	m_ui->statusBar->addPermanentWidget(m_fileNameLabel);
+	m_ui->statusBar->addPermanentWidget(m_timeLabel);
 
-    connect(ui->actionOpen, SIGNAL(triggered()), this, SLOT(actionOpen()));
-    connect(ui->actionSave, SIGNAL(triggered()), this, SLOT(actionSave()));
-    connect(ui->actionSaveAs, SIGNAL(triggered()), this, SLOT(actionSaveAs()));
-    connect(ui->actionExit, SIGNAL(triggered()), this, SLOT(close()));
-    connect(ui->actionAdd, SIGNAL(triggered()), this, SLOT(addSubtitle()));
-    connect(ui->actionRemove, SIGNAL(triggered()), this, SLOT(removeSubtitle()));
-    connect(ui->actionPrevious, SIGNAL(triggered()), this, SLOT(previousSubtitle()));
-    connect(ui->actionNext, SIGNAL(triggered()), this, SLOT(nextSubtitle()));
-    connect(ui->actionRescale, SIGNAL(triggered()), this, SLOT(rescaleSubtitles()));
-    connect(ui->actionPlayPause, SIGNAL(triggered()), this, SLOT(playPause()));
-    connect(ui->actionStop, SIGNAL(triggered()), mediaObject, SLOT(stop()));
-    connect(ui->actionAboutQt, SIGNAL(triggered()), QApplication::instance(), SLOT(aboutQt()));
-    connect(ui->actionAboutApplication, SIGNAL(triggered()), this, SLOT(actionAboutApplication()));
-    connect(ui->trackComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(selectTrack(int)));
-    connect(mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick()));
-    connect(mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)), this, SLOT(stateChanged(Phonon::State)));
+	resize(QSettings().value("Window/size", size()).toSize());
+	move(QSettings().value("Window/position", pos()).toPoint());
+	restoreState(QSettings().value("Window/state", QByteArray()).toByteArray());
+
+	setWindowTitle(tr("%1 - Unnamed").arg("Subtitles Editor"));
+
+	connect(m_ui->actionOpen, SIGNAL(triggered()), this, SLOT(actionOpen()));
+	connect(m_ui->actionSave, SIGNAL(triggered()), this, SLOT(actionSave()));
+	connect(m_ui->actionSaveAs, SIGNAL(triggered()), this, SLOT(actionSaveAs()));
+	connect(m_ui->actionExit, SIGNAL(triggered()), this, SLOT(close()));
+	connect(m_ui->actionAdd, SIGNAL(triggered()), this, SLOT(addSubtitle()));
+	connect(m_ui->actionRemove, SIGNAL(triggered()), this, SLOT(removeSubtitle()));
+	connect(m_ui->actionPrevious, SIGNAL(triggered()), this, SLOT(previousSubtitle()));
+	connect(m_ui->actionNext, SIGNAL(triggered()), this, SLOT(nextSubtitle()));
+	connect(m_ui->actionRescale, SIGNAL(triggered()), this, SLOT(rescaleSubtitles()));
+	connect(m_ui->actionPlayPause, SIGNAL(triggered()), this, SLOT(playPause()));
+	connect(m_ui->actionStop, SIGNAL(triggered()), m_mediaObject, SLOT(stop()));
+	connect(m_ui->actionAboutQt, SIGNAL(triggered()), QApplication::instance(), SLOT(aboutQt()));
+	connect(m_ui->actionAboutApplication, SIGNAL(triggered()), this, SLOT(actionAboutApplication()));
+	connect(m_ui->trackComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(selectTrack(int)));
+	connect(m_mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)), this, SLOT(stateChanged(Phonon::State)));
+	connect(m_mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick()));
+	connect(m_mediaObject, SIGNAL(finished()), this, SLOT(finished()));
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+	delete m_ui;
 }
 
 void MainWindow::changeEvent(QEvent *event)
 {
-    QMainWindow::changeEvent(event);
+	QMainWindow::changeEvent(event);
 
-    switch (event->type())
-    {
-        case QEvent::LanguageChange:
-            ui->retranslateUi(this);
-            break;
-        default:
-            break;
-    }
+	switch (event->type())
+	{
+		case QEvent::LanguageChange:
+			m_ui->retranslateUi(this);
+			break;
+		default:
+			break;
+	}
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	QSettings settings;
+	settings.setValue("Window/size", size());
+	settings.setValue("Window/position", pos());
+	settings.setValue("Window/state", saveState());
+	settings.setValue("volume", m_ui->volumeSlider->audioOutput()->volume());
+
+	event->accept();
 }
 
 QString MainWindow::timeToString(qint64 time)
 {
-    QString string;
-    int fractions = (time / 100);
-    int seconds = (fractions / 10);
-    int minutes = (seconds / 60);
+	QString string;
+	int fractions = (time / 100);
+	int seconds = (fractions / 10);
+	int minutes = (seconds / 60);
 
-    if (minutes < 10)
-    {
-        string.append('0');
-    }
+	if (minutes < 10)
+	{
+		string.append('0');
+	}
 
-    string.append(QString::number(minutes));
-    string.append(':');
+	string.append(QString::number(minutes));
+	string.append(':');
 
-    seconds = (seconds - (minutes * 60));
+	seconds = (seconds - (minutes * 60));
 
-    if (seconds < 10)
-    {
-        string.append('0');
-    }
+	if (seconds < 10)
+	{
+		string.append('0');
+	}
 
-    string.append(QString::number(seconds));
-    string.append('.');
+	string.append(QString::number(seconds));
+	string.append('.');
 
-    fractions = (fractions - (seconds * 10) - (minutes * 600));
+	fractions = (fractions - (seconds * 10) - (minutes * 600));
 
-    string.append(QString::number(fractions));
+	string.append(QString::number(fractions));
 
-    return string;
+	return string;
 }
 
 QList<Subtitle> MainWindow::readSubtitles(const QString &fileName)
 {
-    QFile file(fileName);
-    QList<Subtitle> subtitles;
+	QFile file(fileName);
+	QList<Subtitle> subtitles;
 
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        QMessageBox::warning(this, tr("Error"), tr("Can not read subtitle file:\n%1").arg(fileName));
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("Error"), tr("Can not read subtitle file:\n%1").arg(fileName));
 
-        return subtitles;
-    }
+		return subtitles;
+	}
 
-    QTextStream textStream(&file);
+	QTextStream textStream(&file);
 
-    while (!textStream.atEnd())
-    {
-        QString line = textStream.readLine().trimmed();
+	while (!textStream.atEnd())
+	{
+		QString line = textStream.readLine().trimmed();
 
-        if (line.isEmpty() || line.startsWith("//"))
-        {
-            continue;
-        }
+		if (line.isEmpty() || line.startsWith("//"))
+		{
+			continue;
+		}
 
-        QRegExp expression("(\\d+)\\s+(\\d+)\\s+([\\d\\.]+)\\s+([\\d\\.]+)\\s+_?\\(?\"(.+)\"\\)?");
+		QRegExp expression("(\\d+)\\s+(\\d+)\\s+([\\d\\.]+)\\s+([\\d\\.]+)\\s+_?\\(?\"(.+)\"\\)?");
 
-        if (expression.exactMatch(line))
-        {
-            QStringList capturedTexts = expression.capturedTexts();
-            Subtitle subtitle;
+		if (expression.exactMatch(line))
+		{
+			QStringList capturedTexts = expression.capturedTexts();
+			Subtitle subtitle;
 
-            subtitle.text = capturedTexts.at(5);
-            subtitle.beginTime = capturedTexts.at(3).toDouble();
-            subtitle.endTime = capturedTexts.at(4).toDouble();
-            subtitle.positionX = capturedTexts.at(1).toInt();
-            subtitle.positionY = capturedTexts.at(2).toInt();
+			subtitle.text = capturedTexts.at(5);
+			subtitle.beginTime = capturedTexts.at(3).toDouble();
+			subtitle.endTime = capturedTexts.at(4).toDouble();
+			subtitle.positionX = capturedTexts.at(1).toInt();
+			subtitle.positionY = capturedTexts.at(2).toInt();
 
-            subtitles.append(subtitle);
-        }
-    }
+			subtitles.append(subtitle);
+		}
+	}
 
-    file.close();
+	file.close();
 
-    return subtitles;
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
+
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+
+
+	return subtitles;
 }
 
 double MainWindow::timeToSeconds(QTime time)
 {
-    double seconds = (time.minute() * 60);
-    seconds += time.second();
-    seconds += (time.msec() / 1000);
+	double seconds = (time.minute() * 60);
+	seconds += time.second();
+	seconds += (time.msec() / 1000);
 
-    return seconds;
+	return seconds;
 }
 
 bool MainWindow::saveSubtitles(QString fileName)
 {
-    Q_UNUSED(fileName)
+	for (int i = 0; i < 2; ++i)
+	{
+		if (m_subtitles[i].isEmpty())
+		{
+			continue;
+		}
 
-    for (int i = 0; i < 2; ++i)
-    {
-        if (subtitles[i].isEmpty())
-        {
-            continue;
-        }
+		if (i > 0)
+		{
+			fileName = fileName.left(fileName.length() - 3) + "txa";
+		}
 
-        if (i > 0)
-        {
-            fileName = fileName.left(fileName.length() - 3) + "txa";
-        }
+		QFile file(fileName);
 
-        QFile file(fileName);
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			QMessageBox::warning(this, tr("Error"), tr("Can not save subtitle file:\n%1").arg(fileName));
 
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-        {
-            QMessageBox::warning(this, tr("Error"), tr("Can not save subtitle file:\n%1").arg(fileName));
+			return false;
+		}
 
-            return false;
-        }
+		QTextStream textStream(&file);
 
-        QTextStream textStream(&file);
+		for (int j = 0; j < m_subtitles[i].count(); ++j)
+		{
+			textStream << QString("%1\t%2\t\t%3\t%4\t_(\"%5\")\n").arg(m_subtitles[i][j].positionX).arg(m_subtitles[i][j].positionY).arg(m_subtitles[i][j].beginTime).arg(m_subtitles[i][j].endTime).arg(m_subtitles[i][j].text);
 
-        for (int j = 0; j < subtitles[i].count(); ++j)
-        {
-            textStream << QString("%1\t%2\t\t%3\t%4\t_(\"%5\")\n").arg(subtitles[i][j].positionX).arg(subtitles[i][j].positionY).arg(subtitles[i][j].beginTime).arg(subtitles[i][j].endTime).arg(subtitles[i][j].text);
+			if ((j + 1) < m_subtitles[i].count() && m_subtitles[i][j].beginTime != m_subtitles[i][j + 1].beginTime)
+			{
+				textStream << "\n";
+			}
+		}
 
-            if ((j + 1) < subtitles[i].count() && subtitles[i][j].beginTime != subtitles[i][j + 1].beginTime)
-            {
-                textStream << "\n";
-            }
-        }
+		file.close();
+	}
 
-        file.close();
-    }
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
 
-    return true;
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+
+	return true;
 }
 
-void MainWindow::openMovie(const QString &filename)
+void MainWindow::openMovie(const QString &fileName)
 {
-    mediaObject->setCurrentSource(Phonon::MediaSource(filename));
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
 
-    fileNameLabel->setText(QFileInfo(filename).fileName());
-    timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+	m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
+
+	m_mediaObject->setCurrentSource(Phonon::MediaSource(fileName));
+
+	m_ui->actionPlayPause->setEnabled(true);
 }
 
-void MainWindow::openSubtitle(const QString &filename, int index)
+void MainWindow::openSubtitle(const QString &fileName, int index)
 {
-    subtitles[index] = readSubtitles(filename);
+	m_subtitles[index] = readSubtitles(fileName);
 }
 
 void MainWindow::actionOpen()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Video or Subtitle file"),
-            QSettings().value("lastUsedDir", QDesktopServices::storageLocation(QDesktopServices::HomeLocation)).toString(),
-            tr("Video and subtitle files (*.txt *.og?)"));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Open Video or Subtitle file"),
+			QSettings().value("lastUsedDir", QDesktopServices::storageLocation(QDesktopServices::HomeLocation)).toString(),
+			tr("Video and subtitle files (*.txt *.og?)"));
 
-    if (!fileName.isEmpty())
-    {
-        const QString basename = fileName.left(fileName.length() - 3);
-        const QString oggfile = basename + "ogg";
-        const QString ogmfile = basename + "ogm";
-        const QString ogvfile = basename + "ogv";
-        const QString txtfile = basename + "txt";
-        const QString txafile = basename + "txa";
+	if (!fileName.isEmpty())
+	{
+		const QString basename = fileName.left(fileName.length() - 3);
+		const QString oggfile = basename + "ogg";
+		const QString ogmfile = basename + "ogm";
+		const QString ogvfile = basename + "ogv";
+		const QString txtfile = basename + "txt";
+		const QString txafile = basename + "txa";
 
-        subtitles[0].clear();
-        subtitles[1].clear();
+		m_subtitles[0].clear();
+		m_subtitles[1].clear();
 
-        if (QFile::exists(oggfile))
-            openMovie(oggfile);
-        if (QFile::exists(ogmfile))
-            openMovie(ogmfile);
-        if (QFile::exists(ogvfile))
-            openMovie(ogvfile);
-        if (QFile::exists(txtfile))
-        {
-            openSubtitle(txtfile, 0);
-            currentPath = fileName;
-        }
-        if (QFile::exists(txafile))
-        {
-            openSubtitle(txafile, 1);
-            currentPath = fileName;
-        }
+		if (QFile::exists(oggfile))
+		{
+			openMovie(oggfile);
+		}
 
-        selectTrack(0);
+		if (QFile::exists(ogmfile))
+		{
+			openMovie(ogmfile);
+		}
 
-        QSettings().setValue("lastUsedDir", QFileInfo(fileName).dir().path());
-    }
+		if (QFile::exists(ogvfile))
+		{
+			openMovie(ogvfile);
+		}
+
+		if (QFile::exists(txtfile))
+		{
+			openSubtitle(txtfile, 0);
+
+			m_currentPath = fileName;
+		}
+
+		if (QFile::exists(txafile))
+		{
+			openSubtitle(txafile, 1);
+
+			m_currentPath = fileName;
+		}
+
+		selectTrack(0);
+
+		QSettings().setValue("lastUsedDir", QFileInfo(fileName).dir().path());
+	}
 }
 
 void MainWindow::actionSave()
 {
-    if (currentPath.isEmpty())
-    {
-        actionSaveAs();
-    }
-    else
-    {
-        saveSubtitles(currentPath);
-    }
+	if (m_currentPath.isEmpty())
+	{
+		actionSaveAs();
+	}
+	else
+	{
+		saveSubtitles(m_currentPath);
+	}
 }
 
 void MainWindow::actionSaveAs()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Subtitle file"), (currentPath.isEmpty()?QDesktopServices::storageLocation(QDesktopServices::HomeLocation):QFileInfo(currentPath).dir().path()));
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Subtitle file"), (m_currentPath.isEmpty()?QDesktopServices::storageLocation(QDesktopServices::HomeLocation):QFileInfo(m_currentPath).dir().path()));
 
-    if (!fileName.isEmpty())
-    {
-        saveSubtitles(fileName);
-    }
+	if (!fileName.isEmpty())
+	{
+		saveSubtitles(fileName);
+	}
 }
 
 void MainWindow::actionAboutApplication()
 {
-    QMessageBox::about(this, tr("About Subtitles Editor"), QString(tr("<b>Subtitles Editor %1</b><br />Subtitles previewer and editor for Warzone 2100.").arg(QApplication::instance()->applicationVersion())));
+	QMessageBox::about(this, tr("About Subtitles Editor"), QString(tr("<b>Subtitles Editor %1</b><br />Subtitles previewer and editor for Warzone 2100.").arg(QApplication::instance()->applicationVersion())));
 }
 
 void MainWindow::stateChanged(Phonon::State state)
 {
-    switch (state)
-    {
-        case Phonon::ErrorState:
-            if (mediaObject->errorType() == Phonon::FatalError)
-            {
-                QMessageBox::warning(this, tr("Fatal Error"), mediaObject->errorString());
-            }
-            else
-            {
-                QMessageBox::warning(this, tr("Error"), mediaObject->errorString());
-            }
-            break;
-        case Phonon::PlayingState:
-            ui->actionPlayPause->setEnabled(true);
-            ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-            ui->actionStop->setEnabled(true);
-            break;
-        case Phonon::StoppedState:
-            ui->actionPlayPause->setEnabled(true);
-            ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-            ui->actionStop->setEnabled(false);
-            timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(mediaObject->totalTime())));
-            break;
-        case Phonon::PausedState:
-            ui->actionPlayPause->setEnabled(true);
-            ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-            ui->actionStop->setEnabled(true);
-            break;
-        default:
-            break;
-    }
+	switch (state)
+	{
+		case Phonon::ErrorState:
+			if (m_mediaObject->errorType() == Phonon::FatalError)
+			{
+				QMessageBox::warning(this, tr("Fatal Error"), m_mediaObject->errorString());
+			}
+			else
+			{
+				QMessageBox::warning(this, tr("Error"), m_mediaObject->errorString());
+			}
+
+			m_ui->actionPlayPause->setEnabled(false);
+		case Phonon::StoppedState:
+			m_ui->actionPlayPause->setText(tr("Play"));
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-play", style()->standardIcon(QStyle::SP_MediaPlay)));
+			m_ui->actionStop->setEnabled(false);
+			m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
+			break;
+		case Phonon::PlayingState:
+			m_ui->actionPlayPause->setText(tr("Pause"));
+			m_ui->actionPlayPause->setEnabled(true);
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-pause", style()->standardIcon(QStyle::SP_MediaPause)));
+			m_ui->actionStop->setEnabled(true);
+			break;
+		case Phonon::PausedState:
+			m_ui->actionPlayPause->setText(tr("Play"));
+			m_ui->actionPlayPause->setEnabled(true);
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-play", style()->standardIcon(QStyle::SP_MediaPlay)));
+			m_ui->actionStop->setEnabled(true);
+			break;
+		default:
+			break;
+	}
+}
+
+void MainWindow::finished()
+{
+	m_mediaObject->stop();
 }
 
 void MainWindow::tick()
 {
-    timeLabel->setText(QString("%1 / %2").arg(timeToString(mediaObject->currentTime())).arg(timeToString(mediaObject->totalTime())));
+	m_timeLabel->setText(QString("%1 / %2").arg(timeToString(m_mediaObject->currentTime())).arg(timeToString(m_mediaObject->totalTime())));
 
-    QString currentBottomSubtitles;
-    QString currentTopSubtitles;
-    qint64 currentTime = (mediaObject->currentTime() / 1000);
+	QString currentBottomSubtitles;
+	QString currentTopSubtitles;
+	qint64 currentTime = (m_mediaObject->currentTime() / 1000);
 
-    for (int i = 0; i < subtitles[0].count(); ++i)
-    {
-        if (subtitles[0].at(i).beginTime < currentTime && subtitles[0].at(i).endTime > currentTime)
-        {
-            currentBottomSubtitles.append(subtitles[0].at(i).text);
-            currentBottomSubtitles.append(" | ");
-            currentSubtitle = i;
-        }
-    }
-    for (int i = 0; i < subtitles[1].count(); ++i)
-    {
-        if (subtitles[1].at(i).beginTime < currentTime && subtitles[1].at(i).endTime > currentTime)
-        {
-            currentTopSubtitles.append(subtitles[1].at(i).text);
-            currentTopSubtitles.append(" | ");
-        }
-    }
+	for (int i = 0; i < m_subtitles[0].count(); ++i)
+	{
+		if (m_subtitles[0].at(i).beginTime < currentTime && m_subtitles[0].at(i).endTime > currentTime)
+		{
+			currentBottomSubtitles.append(m_subtitles[0].at(i).text);
+			currentBottomSubtitles.append(" | ");
+			m_currentSubtitle = i;
+		}
+	}
+	for (int i = 0; i < m_subtitles[1].count(); ++i)
+	{
+		if (m_subtitles[1].at(i).beginTime < currentTime && m_subtitles[1].at(i).endTime > currentTime)
+		{
+			currentTopSubtitles.append(m_subtitles[1].at(i).text);
+			currentTopSubtitles.append(" | ");
+		}
+	}
 
-    showSubtitle();
-    currentTopSubtitles = currentTopSubtitles.left(currentTopSubtitles.length() - 3);
-    currentBottomSubtitles = currentBottomSubtitles.left(currentBottomSubtitles.length() - 3);
-    ui->bottomSubs->setText(currentBottomSubtitles);
-    ui->topSubs->setText(currentTopSubtitles);
+	showSubtitle();
+	currentTopSubtitles = currentTopSubtitles.left(currentTopSubtitles.length() - 3);
+	currentBottomSubtitles = currentBottomSubtitles.left(currentBottomSubtitles.length() - 3);
+	m_ui->bottomSubs->setText(currentBottomSubtitles);
+	m_ui->topSubs->setText(currentTopSubtitles);
 }
 
 void MainWindow::selectTrack(int track)
 {
-    currentSubtitle = 0;
-    currentTrack = track;
+	m_currentSubtitle = 0;
+	m_currentTrack = track;
 
-    showSubtitle();
+	showSubtitle();
 }
 
 void MainWindow::addSubtitle()
 {
-    Subtitle subtitle;
-    subtitle.positionX = 20;
-    subtitle.positionY = 432;
-    subtitle.beginTime = 0;
-    subtitle.endTime = 0;
+	Subtitle subtitle;
+	subtitle.positionX = 20;
+	subtitle.positionY = 432;
+	subtitle.beginTime = 0;
+	subtitle.endTime = 0;
 
-    subtitles[currentTrack].insert(currentSubtitle, subtitle);
+	m_subtitles[m_currentTrack].insert(m_currentSubtitle, subtitle);
 
-    nextSubtitle();
+	nextSubtitle();
 }
 
 void MainWindow::removeSubtitle()
 {
-    if (QMessageBox::question(this, tr("Remove Subtitle"), tr("Are you sure that you want to remove this subtitle?")))
-    {
-        subtitles[currentTrack].removeAt(currentSubtitle);
+	if (QMessageBox::question(this, tr("Remove Subtitle"), tr("Are you sure that you want to remove this subtitle?")))
+	{
+		m_subtitles[m_currentTrack].removeAt(m_currentSubtitle);
 
-        showSubtitle();
-    }
+		showSubtitle();
+	}
 }
 
 void MainWindow::previousSubtitle()
 {
-    --currentSubtitle;
+	--m_currentSubtitle;
 
-    showSubtitle();
+	showSubtitle();
 }
 
 void MainWindow::nextSubtitle()
 {
-    ++currentSubtitle;
+	++m_currentSubtitle;
 
-    showSubtitle();
+	showSubtitle();
 }
 
 void MainWindow::showSubtitle()
 {
-    disconnect(ui->subtitleTextEdit, SIGNAL(textChanged()), this, SLOT(updateSubtitle()));
-    disconnect(ui->xPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
-    disconnect(ui->yPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
-    disconnect(ui->beginTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
-    disconnect(ui->lengthTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
+	disconnect(m_ui->subtitleTextEdit, SIGNAL(textChanged()), this, SLOT(updateSubtitle()));
+	disconnect(m_ui->xPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
+	disconnect(m_ui->yPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
+	disconnect(m_ui->beginTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
+	disconnect(m_ui->lengthTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
 
-    if (currentTrack < 0 || currentTrack > 1)
-    {
-        currentTrack = 0;
-    }
+	if (m_currentTrack < 0 || m_currentTrack > 1)
+	{
+		m_currentTrack = 0;
+	}
 
-    if (currentSubtitle < 0)
-    {
-        if (subtitles[currentTrack].count() > 0)
-        {
-            currentSubtitle = (subtitles[currentTrack].count() - 1);
-        }
-        else
-        {
-            currentSubtitle = 0;
-        }
-    }
-    else if (currentSubtitle >= subtitles[currentTrack].count())
-    {
-        currentSubtitle = 0;
-    }    
+	if (m_currentSubtitle < 0)
+	{
+		if (m_subtitles[m_currentTrack].count() > 0)
+		{
+			m_currentSubtitle = (m_subtitles[m_currentTrack].count() - 1);
+		}
+		else
+		{
+			m_currentSubtitle = 0;
+		}
+	}
+	else if (m_currentSubtitle >= m_subtitles[m_currentTrack].count())
+	{
+		m_currentSubtitle = 0;
+	}
 
-    if (currentSubtitle < subtitles[currentTrack].count())
-    {
-        QTime nullTime(0, 0, 0, 0);
+	if (m_currentSubtitle < m_subtitles[m_currentTrack].count())
+	{
+		QTime nullTime(0, 0, 0, 0);
 
-        ui->subtitleTextEdit->setPlainText(subtitles[currentTrack].at(currentSubtitle).text);
-        ui->beginTimeEdit->setTime(nullTime.addMSecs((subtitles[currentTrack].at(currentSubtitle).beginTime * 1000)));
-        ui->lengthTimeEdit->setTime(nullTime.addMSecs(((subtitles[currentTrack].at(currentSubtitle).endTime * 1000) - (subtitles[currentTrack].at(currentSubtitle).beginTime * 1000))));
-        ui->xPositionSpinBox->setValue(subtitles[currentTrack].at(currentSubtitle).positionX);
-        ui->yPositionSpinBox->setValue(subtitles[currentTrack].at(currentSubtitle).positionY);
-    }
-    else
-    {
-        ui->subtitleTextEdit->clear();
-        ui->beginTimeEdit->setTime(QTime());
-        ui->lengthTimeEdit->setTime(QTime());
-        ui->xPositionSpinBox->setValue(0);
-        ui->yPositionSpinBox->setValue(0);
-    }
+		m_ui->subtitleTextEdit->setPlainText(m_subtitles[m_currentTrack].at(m_currentSubtitle).text);
+		m_ui->beginTimeEdit->setTime(nullTime.addMSecs((m_subtitles[m_currentTrack].at(m_currentSubtitle).beginTime * 1000)));
+		m_ui->lengthTimeEdit->setTime(nullTime.addMSecs(((m_subtitles[m_currentTrack].at(m_currentSubtitle).endTime * 1000) - (m_subtitles[m_currentTrack].at(m_currentSubtitle).beginTime * 1000))));
+		m_ui->xPositionSpinBox->setValue(m_subtitles[m_currentTrack].at(m_currentSubtitle).positionX);
+		m_ui->yPositionSpinBox->setValue(m_subtitles[m_currentTrack].at(m_currentSubtitle).positionY);
+	}
+	else
+	{
+		m_ui->subtitleTextEdit->clear();
+		m_ui->beginTimeEdit->setTime(QTime());
+		m_ui->lengthTimeEdit->setTime(QTime());
+		m_ui->xPositionSpinBox->setValue(0);
+		m_ui->yPositionSpinBox->setValue(0);
+	}
 
-    connect(ui->subtitleTextEdit, SIGNAL(textChanged()), this, SLOT(updateSubtitle()));
-    connect(ui->xPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
-    connect(ui->yPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
-    connect(ui->beginTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
-    connect(ui->lengthTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
+	connect(m_ui->subtitleTextEdit, SIGNAL(textChanged()), this, SLOT(updateSubtitle()));
+	connect(m_ui->xPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
+	connect(m_ui->yPositionSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateSubtitle()));
+	connect(m_ui->beginTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
+	connect(m_ui->lengthTimeEdit, SIGNAL(timeChanged(QTime)), this, SLOT(updateSubtitle()));
 }
 
 void MainWindow::updateSubtitle()
 {
-    if (currentSubtitle == 0 && subtitles[currentTrack].count() == 0)
-    {
-        Subtitle subtitle;
+	if (m_currentSubtitle == 0 && m_subtitles[m_currentTrack].count() == 0)
+	{
+		Subtitle subtitle;
 
-        subtitles[currentTrack].append(subtitle);
-    }
+		m_subtitles[m_currentTrack].append(subtitle);
+	}
 
-    subtitles[currentTrack][currentSubtitle].text = ui->subtitleTextEdit->toPlainText();
-    subtitles[currentTrack][currentSubtitle].positionX = ui->xPositionSpinBox->value();
-    subtitles[currentTrack][currentSubtitle].positionY = ui->yPositionSpinBox->value();
-    subtitles[currentTrack][currentSubtitle].beginTime = timeToSeconds(ui->beginTimeEdit->time());
-    subtitles[currentTrack][currentSubtitle].endTime = (timeToSeconds(ui->beginTimeEdit->time()) + timeToSeconds(ui->lengthTimeEdit->time()));
+	m_subtitles[m_currentTrack][m_currentSubtitle].text = m_ui->subtitleTextEdit->toPlainText();
+	m_subtitles[m_currentTrack][m_currentSubtitle].positionX = m_ui->xPositionSpinBox->value();
+	m_subtitles[m_currentTrack][m_currentSubtitle].positionY = m_ui->yPositionSpinBox->value();
+	m_subtitles[m_currentTrack][m_currentSubtitle].beginTime = timeToSeconds(m_ui->beginTimeEdit->time());
+	m_subtitles[m_currentTrack][m_currentSubtitle].endTime = (timeToSeconds(m_ui->beginTimeEdit->time()) + timeToSeconds(m_ui->lengthTimeEdit->time()));
 }
 
 void MainWindow::rescaleSubtitles()
 {
-    bool ok = false;
-    double scale = QInputDialog::getDouble(this, tr("Rescale Subtitles"), tr("Insert time multiplier:"), 1, 0, 100, 5, &ok);
+	bool ok = false;
+	double scale = QInputDialog::getDouble(this, tr("Rescale Subtitles"), tr("Insert time multiplier:"), 1, 0, 100, 5, &ok);
 
-    for (int i = 0; i < subtitles[0].count(); ++i)
-    {
-        subtitles[0][i].beginTime *= scale;
-        subtitles[0][i].endTime *= scale;
-    }
+	for (int i = 0; i < m_subtitles[0].count(); ++i)
+	{
+		m_subtitles[0][i].beginTime *= scale;
+		m_subtitles[0][i].endTime *= scale;
+	}
 
-    for (int i = 0; i < subtitles[1].count(); ++i)
-    {
-        subtitles[1][i].beginTime *= scale;
-        subtitles[1][i].endTime *= scale;
-    }
+	for (int i = 0; i < m_subtitles[1].count(); ++i)
+	{
+		m_subtitles[1][i].beginTime *= scale;
+		m_subtitles[1][i].endTime *= scale;
+	}
 
-    showSubtitle();
+	showSubtitle();
 }
 
 void MainWindow::playPause()
 {
-    if (mediaObject->state() == Phonon::PlayingState)
-    {
-         mediaObject->pause();
-    }
-    else
-    {
-         mediaObject->play();
-    }
+	if (m_mediaObject->state() == Phonon::PlayingState)
+	{
+		m_mediaObject->pause();
+	}
+	else
+	{
+		m_mediaObject->play();
+	}
 }
-
