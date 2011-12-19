@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 	m_ui->setupUi(this);
 
 	Phonon::AudioOutput *audioOutput = new Phonon::AudioOutput(this);
+	audioOutput->setVolume(QSettings().value("volume", 0.8).toReal());
 
 	m_mediaObject = new Phonon::MediaObject(this);
 	m_mediaObject->setTickInterval(100);
@@ -128,6 +129,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 	settings.setValue("Window/size", size());
 	settings.setValue("Window/position", pos());
 	settings.setValue("Window/state", saveState());
+	settings.setValue("volume", m_ui->volumeSlider->audioOutput()->volume());
 
 	event->accept();
 }
