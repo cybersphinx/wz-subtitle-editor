@@ -70,12 +70,18 @@
            <property name="text">
             <string/>
            </property>
+           <property name="autoRaise">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
          <item>
           <widget class="QToolButton" name="stopButton">
            <property name="text">
             <string/>
+           </property>
+           <property name="autoRaise">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -86,6 +92,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="iconVisible">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -428,14 +437,14 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>Phonon::VideoPlayer</class>
-   <extends>QWidget</extends>
-   <header location="global">phonon/videoplayer.h</header>
-  </customwidget>
-  <customwidget>
    <class>Phonon::SeekSlider</class>
    <extends>QWidget</extends>
    <header location="global">phonon/seekslider.h</header>
+  </customwidget>
+  <customwidget>
+   <class>Phonon::VideoWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">phonon/videowidget.h</header>
   </customwidget>
   <customwidget>
    <class>Phonon::VolumeSlider</class>
