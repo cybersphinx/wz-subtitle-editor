@@ -68,6 +68,7 @@ public slots:
 
 protected:
 	void changeEvent(QEvent *event);
+	void closeEvent(QCloseEvent *event);
 	QString timeToString(qint64 time);
 	QList<Subtitle> readSubtitles(const QString &fileName);
 	double timeToSeconds(QTime time);

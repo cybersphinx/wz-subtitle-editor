@@ -80,6 +80,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 	m_ui->statusBar->addPermanentWidget(m_fileNameLabel);
 	m_ui->statusBar->addPermanentWidget(m_timeLabel);
 
+	resize(QSettings().value("Window/size", size()).toSize());
+	move(QSettings().value("Window/position", pos()).toPoint());
+	restoreState(QSettings().value("Window/state", QByteArray()).toByteArray());
+
 	connect(m_ui->actionOpen, SIGNAL(triggered()), this, SLOT(actionOpen()));
 	connect(m_ui->actionSave, SIGNAL(triggered()), this, SLOT(actionSave()));
 	connect(m_ui->actionSaveAs, SIGNAL(triggered()), this, SLOT(actionSaveAs()));
@@ -115,6 +119,16 @@ void MainWindow::changeEvent(QEvent *event)
 		default:
 			break;
 	}
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+	QSettings settings;
+	settings.setValue("Window/size", size());
+	settings.setValue("Window/position", pos());
+	settings.setValue("Window/state", saveState());
+
+	event->accept();
 }
 
 QString MainWindow::timeToString(qint64 time)
