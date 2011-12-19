@@ -28,6 +28,8 @@
 #include <QtGui/QInputDialog>
 #include <QtGui/QDesktopServices>
 
+#include <Phonon/AudioOutput>
+
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
@@ -44,11 +46,12 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->bottomSubs->setWordWrap(true);
 	ui->bottomSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
 
+	Phonon::AudioOutput *audioOutput = new Phonon::AudioOutput(this);
+
 	mediaObject = new Phonon::MediaObject(this);
 	mediaObject->setTickInterval(100);
-	Phonon::createPath(mediaObject, ui->videoWidget);
 
-	audioOutput = new Phonon::AudioOutput(this);
+	Phonon::createPath(mediaObject, ui->videoWidget);
 	Phonon::createPath(mediaObject, audioOutput);
 
 	ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-start", style()->standardIcon(QStyle::SP_MediaPlay)));
@@ -545,4 +548,3 @@ void MainWindow::playPause()
 		 mediaObject->play();
 	}
 }
-
