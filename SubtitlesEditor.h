@@ -55,6 +55,7 @@ public slots:
 	void actionSaveAs();
 	void actionAboutApplication();
 	void stateChanged(Phonon::State state);
+	void finished();
 	void tick();
 	void selectTrack(int track);
 	void addSubtitle();

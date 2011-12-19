@@ -98,8 +98,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 	connect(m_ui->actionAboutQt, SIGNAL(triggered()), QApplication::instance(), SLOT(aboutQt()));
 	connect(m_ui->actionAboutApplication, SIGNAL(triggered()), this, SLOT(actionAboutApplication()));
 	connect(m_ui->trackComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(selectTrack(int)));
-	connect(m_mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick()));
 	connect(m_mediaObject, SIGNAL(stateChanged(Phonon::State,Phonon::State)), this, SLOT(stateChanged(Phonon::State)));
+	connect(m_mediaObject, SIGNAL(tick(qint64)), this, SLOT(tick()));
+	connect(m_mediaObject, SIGNAL(finished()), this, SLOT(finished()));
 }
 
 MainWindow::~MainWindow()
@@ -391,6 +392,11 @@ void MainWindow::stateChanged(Phonon::State state)
 		default:
 			break;
 	}
+}
+
+void MainWindow::finished()
+{
+	m_mediaObject->stop();
 }
 
 void MainWindow::tick()
