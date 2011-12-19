@@ -254,6 +254,8 @@ void MainWindow::openMovie(const QString &filename)
 {
 	m_mediaObject->setCurrentSource(Phonon::MediaSource(filename));
 
+	m_ui->actionPlayPause->setEnabled(true);
+
 	m_fileNameLabel->setText(QFileInfo(filename).fileName());
 	m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
 }
@@ -356,21 +358,24 @@ void MainWindow::stateChanged(Phonon::State state)
 			{
 				QMessageBox::warning(this, tr("Error"), m_mediaObject->errorString());
 			}
-			break;
-		case Phonon::PlayingState:
-			m_ui->actionPlayPause->setEnabled(true);
-			m_ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-			m_ui->actionStop->setEnabled(true);
-			break;
+
+			m_ui->actionPlayPause->setEnabled(false);
 		case Phonon::StoppedState:
-			m_ui->actionPlayPause->setEnabled(true);
-			m_ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+			m_ui->actionPlayPause->setText(tr("Play"));
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-play", style()->standardIcon(QStyle::SP_MediaPlay)));
 			m_ui->actionStop->setEnabled(false);
 			m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
 			break;
-		case Phonon::PausedState:
+		case Phonon::PlayingState:
+			m_ui->actionPlayPause->setText(tr("Pause"));
 			m_ui->actionPlayPause->setEnabled(true);
-			m_ui->actionPlayPause->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-pause", style()->standardIcon(QStyle::SP_MediaPause)));
+			m_ui->actionStop->setEnabled(true);
+			break;
+		case Phonon::PausedState:
+			m_ui->actionPlayPause->setText(tr("Play"));
+			m_ui->actionPlayPause->setEnabled(true);
+			m_ui->actionPlayPause->setIcon(QIcon::fromTheme("media-playback-play", style()->standardIcon(QStyle::SP_MediaPlay)));
 			m_ui->actionStop->setEnabled(true);
 			break;
 		default:
