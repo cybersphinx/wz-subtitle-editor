@@ -40,9 +40,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 
 	m_ui->setupUi(this);
 	m_ui->topSubs->setWordWrap(true);
-	m_ui->topSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
+	m_ui->topSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; }");
 	m_ui->bottomSubs->setWordWrap(true);
-	m_ui->bottomSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; padding: 4px; }");
+	m_ui->bottomSubs->setStyleSheet("QLabel { background-color: black; color: white; font-size: 16px; font-weight: bold; }");
 
 	Phonon::AudioOutput *audioOutput = new Phonon::AudioOutput(this);
 
