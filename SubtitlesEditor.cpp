@@ -85,6 +85,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 	move(QSettings().value("Window/position", pos()).toPoint());
 	restoreState(QSettings().value("Window/state", QByteArray()).toByteArray());
 
+	setWindowTitle(tr("%1 - Unnamed").arg("Subtitles Editor"));
+
 	connect(m_ui->actionOpen, SIGNAL(triggered()), this, SLOT(actionOpen()));
 	connect(m_ui->actionSave, SIGNAL(triggered()), this, SLOT(actionSave()));
 	connect(m_ui->actionSaveAs, SIGNAL(triggered()), this, SLOT(actionSaveAs()));
@@ -208,6 +210,14 @@ QList<Subtitle> MainWindow::readSubtitles(const QString &fileName)
 
 	file.close();
 
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
+
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+
+
 	return subtitles;
 }
 
@@ -222,8 +232,6 @@ double MainWindow::timeToSeconds(QTime time)
 
 bool MainWindow::saveSubtitles(QString fileName)
 {
-	Q_UNUSED(fileName)
-
 	for (int i = 0; i < 2; ++i)
 	{
 		if (m_subtitles[i].isEmpty())
@@ -260,22 +268,34 @@ bool MainWindow::saveSubtitles(QString fileName)
 		file.close();
 	}
 
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
+
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+
 	return true;
 }
 
-void MainWindow::openMovie(const QString &filename)
+void MainWindow::openMovie(const QString &fileName)
 {
-	m_mediaObject->setCurrentSource(Phonon::MediaSource(filename));
+	QString title = QFileInfo(fileName).fileName();
+	title = title.left(title.indexOf('.'));
+
+	setWindowTitle(tr("%1 - %2").arg("Subtitles Editor").arg(title));
+
+	m_fileNameLabel->setText(title);
+	m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
+
+	m_mediaObject->setCurrentSource(Phonon::MediaSource(fileName));
 
 	m_ui->actionPlayPause->setEnabled(true);
-
-	m_fileNameLabel->setText(QFileInfo(filename).fileName());
-	m_timeLabel->setText(QString("00:00.0 / %1").arg(timeToString(m_mediaObject->totalTime())));
 }
 
-void MainWindow::openSubtitle(const QString &filename, int index)
+void MainWindow::openSubtitle(const QString &fileName, int index)
 {
-	m_subtitles[index] = readSubtitles(filename);
+	m_subtitles[index] = readSubtitles(fileName);
 }
 
 void MainWindow::actionOpen()
