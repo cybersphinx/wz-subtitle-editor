@@ -382,6 +382,9 @@
        </size>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="margin">
+        <number>0</number>
+       </property>
        <item>
         <layout class="QHBoxLayout" name="topEditorLayout">
          <item>
