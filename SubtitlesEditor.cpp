@@ -552,10 +552,10 @@ void MainWindow::playPause()
 {
 	if (m_mediaObject->state() == Phonon::PlayingState)
 	{
-		 m_mediaObject->pause();
+		m_mediaObject->pause();
 	}
 	else
 	{
-		 m_mediaObject->play();
+		m_mediaObject->play();
 	}
 }

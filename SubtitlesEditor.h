@@ -76,7 +76,6 @@ protected:
 private:
 	Ui::MainWindow *m_ui;
 	Phonon::MediaObject *m_mediaObject;
-	SubtitlesWidget *m_subtitlesWidget;
 	QString m_currentPath;
 	QLabel *m_fileNameLabel;
 	QLabel *m_timeLabel;
