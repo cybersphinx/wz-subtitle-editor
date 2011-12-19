@@ -120,6 +120,13 @@
      </widget>
     </item>
     <item>
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QWidget" name="editorWidget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -162,14 +169,20 @@
          <item>
           <widget class="QToolButton" name="addButton">
            <property name="text">
-            <string>Add</string>
+            <string/>
+           </property>
+           <property name="autoRaise">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QToolButton" name="removeButton">
            <property name="text">
-            <string>Remove</string>
+            <string/>
+           </property>
+           <property name="autoRaise">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -189,14 +202,26 @@
          <item>
           <widget class="QToolButton" name="previousButton">
            <property name="text">
-            <string>Previous</string>
+            <string/>
+           </property>
+           <property name="autoRepeat">
+            <bool>false</bool>
+           </property>
+           <property name="autoRaise">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QToolButton" name="nextButton">
            <property name="text">
-            <string>Next</string>
+            <string/>
+           </property>
+           <property name="autoRepeat">
+            <bool>false</bool>
+           </property>
+           <property name="autoRaise">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
