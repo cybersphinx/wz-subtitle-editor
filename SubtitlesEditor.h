@@ -74,15 +74,15 @@ protected:
 	bool saveSubtitles(QString fileName);
 
 private:
-	Ui::MainWindow *ui;
-	Phonon::MediaObject *mediaObject;
-	SubtitlesWidget *subtitlesWidget;
-	QString currentPath;
-	QLabel *fileNameLabel;
-	QLabel *timeLabel;
-	QList<QList<Subtitle> > subtitles;
-	int currentSubtitle;
-	int currentTrack;
+	Ui::MainWindow *m_ui;
+	Phonon::MediaObject *m_mediaObject;
+	SubtitlesWidget *m_subtitlesWidget;
+	QString m_currentPath;
+	QLabel *m_fileNameLabel;
+	QLabel *m_timeLabel;
+	QList<QList<Subtitle> > m_subtitles;
+	int m_currentSubtitle;
+	int m_currentTrack;
 
 	void openMovie(const QString &filename);
 	void openSubtitle(const QString &filename, int index);
